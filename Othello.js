@@ -17,7 +17,7 @@ class Stone{
         if(this.side == 0) return;
         ctx.beginPath();
         ctx.arc(this.x,this.y,STONE_SIZE,0,Math.PI*2);
-        var gradient = ctx.createLinearGradient(0,0,800,900);
+        var gradient = ctx.createLinearGradient(0,0,800,800);
         if(this.side == 1){
             gradient.addColorStop((COLOR+0)%1,'rgb(255,0,0)')
             gradient.addColorStop((COLOR+1/6)%1,'rgb(255,255,0)')
@@ -168,6 +168,15 @@ class Board{
     }
 
     draw(){
+        // 盤の背景塗りつぶし
+        ctx.beginPath();
+        ctx.rect(0,0,800,800);
+        var gradient = ctx.createLinearGradient(400,-200,400,1000);
+        ctx.fillStyle = gradient
+        gradient.addColorStop((COLOR+0/6)%1,'rgb(255,0,0)')
+        gradient.addColorStop((COLOR+2/6)%1,'rgb(0,255,0)')
+        gradient.addColorStop((COLOR+4/6)%1,'rgb(0,0,255)')
+        ctx.fill()
         // 石の描画
         for(var i=0; i<STAGE_SIZE;i++){
             for(var j=0;j<STAGE_SIZE;j++){

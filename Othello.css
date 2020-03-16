@@ -1,0 +1,10 @@
+body{
+    background-color: #FF00FF;
+    animation: gradation 1s infinite;
+}
+@keyframes gradation {
+    0% { background-color: #FF0000; }
+    33% { background-color: #00FF00; }
+    66% { background-color: #0000FF; }
+    100% { background-color: #FF0000; }
+  }
