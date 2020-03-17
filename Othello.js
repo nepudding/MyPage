@@ -41,6 +41,8 @@ class Stone{
     }
 }
 
+
+
 class Board{
     constructor(){
         this.turn = 1;
@@ -61,27 +63,24 @@ class Board{
 
     }
 
-    // 一番裏返せるマスに石を置くよ
-    comLv1(){
-        var score=0,x,y;
-        for(var i=0; i<STAGE_SIZE; i++)for(var j=0; j<STAGE_SIZE; j++){
-            var hoge = this.reverce(i,j,COM_COLOR).length
-            if(hoge > score){
-                score = hoge;
-                x = i;
-                y = j;
+    getboard(){
+        var tmp = []
+        for(var i=0; i<STAGE_SIZE; i++){
+            tmp[i] = []
+            for(var j=0; j<STAGE_SIZE; j++){
+                tmp[i][j] = this.stones[i][j].side;
             }
         }
-        this.put(x,y,COM_COLOR);
-        this.nextturn();
+        console.log("board",tmp)
+        return tmp;
     }
 
     // 次の人のターンに変わるよ
     nextturn(){
         this.turn = this.turn%2+1;
-        if(!board.canput(this.turn)){
+        if(!this.canput(this.turn)){
             this.turn = this.turn%2+1;
-            if(!board.canput(this.turn)){
+            if(!this.canput(this.turn)){
                 this.gameend();
                 this.turn = 0;
                 return;
@@ -106,56 +105,19 @@ class Board{
 
     // 置ける場所があるか探すよ
     canput(side){
+        var board = this.getboard();
         for(var x=0; x<STAGE_SIZE; x++)for(var y=0;y<STAGE_SIZE;y++){
-            if(this.reverce(x,y,side).length > 0){
+            if(reverce(x,y,side,board).length > 0){
                 return true;
             }
         }
         return false;
     }
 
-    // 裏返せる石を返すよ
-    reverce(x,y,side){
-        // 盤の外には置けないし、無を置くことは出来ない。
-        if(side <= 0 || side > 2 || 0 > x || x >= STAGE_SIZE || 0 > y || y >= STAGE_SIZE ){
-            return [];
-        }
-        // 空き以外に置けない
-        if(this.stones[x][y].side != 0){
-            return [];
-        }
-        var rev = []; // 裏返す石を保存
-        for(var dx=-1;dx <= 1;++dx)for(var dy=-1;dy <= 1;++dy){
-            var hoge = []
-            var i = 1;
-            for(var i=1;true;i++){
-                // 盤外で探索終了
-                if (dx*i+x < 0 || dx*i+x >= STAGE_SIZE || dy*i+y < 0 || dy*i+y >= STAGE_SIZE){
-                    break;
-                }
-                // 石がないから探索終了
-                if (this.stones[x+dx*i][y+dy*i].side == 0){
-                    break;
-                }
-                // 相手の石を覚えていけ
-                if (this.stones[x+dx*i][y+dy*i].side == side%2+1){
-                    hoge.push([x+dx*i,y+dy*i]);
-                }
-                // 自分の石で挟めたね
-                if(this.stones[x+dx*i][y+dy*i].side == side){
-                    for(var piyo of hoge){
-                        rev.push(piyo)
-                    }
-                    break;
-                }
-            }
-        }
-        return rev;
-    }
     // 石を置くよ
     put(x,y,side){
-        console.log(x,y,side)
-        var rev = this.reverce(x,y,side);
+        console.log("put",x,y,side)
+        var rev = reverce(x,y,side,this.getboard());
         // 置けないならおしまい
         if(rev.length == 0) return false;
 
@@ -168,7 +130,6 @@ class Board{
         // 最後に石を置きます
         this.stones[x][y].side = side;
         return true;
-
     }
 
     draw(){
@@ -201,24 +162,100 @@ class Board{
     }
 }
 
-var board = new Board();
+// 裏返せる石を返すよ
+function reverce(x,y,side,state){
+    console.log("rev",x,y,side)
+    // 盤の外には置けないし、無を置くことは出来ない。
+    if(side <= 0 || side > 2 || 0 > x || x >= STAGE_SIZE || 0 > y || y >= STAGE_SIZE ){
+        return [];
+    }
+    // 空き以外に置けない
+    if(state[x][y] != 0){
+        return [];
+    }
+    var rev = []; // 裏返す石を保存
+    for(var dx=-1;dx <= 1;++dx)for(var dy=-1;dy <= 1;++dy){
+        var hoge = []
+        var i = 1;
+        for(var i=1;true;i++){
+            // 盤外で探索終了
+            if (dx*i+x < 0 || dx*i+x >= STAGE_SIZE || dy*i+y < 0 || dy*i+y >= STAGE_SIZE){
+                break;
+            }
+            // 石がないから探索終了
+            if (state[x+dx*i][y+dy*i] == 0){
+                break;
+            }
+            // 相手の石を覚えていけ
+            if (state[x+dx*i][y+dy*i] == side%2+1){
+                hoge.push([x+dx*i,y+dy*i]);
+            }
+            // 自分の石で挟めたね
+            if(state[x+dx*i][y+dy*i] == side){
+                for(var piyo of hoge){
+                    rev.push(piyo)
+                }
+                break;
+            }
+        }
+    }
+    return rev;
+}
+
+// 一番裏返せるマスに石を置くよ
+function comLv1(board){
+    state = board.getboard();
+    var score=0,x,y;
+    for(var i=0; i<STAGE_SIZE; i++)for(var j=0; j<STAGE_SIZE; j++){
+        var hoge = reverce(i,j,COM_COLOR,state).length
+        if(hoge > score){
+            score = hoge;
+            x = i;
+            y = j;
+        }
+    }
+    board.put(x,y,COM_COLOR);
+    board.nextturn();
+}
+
+// mini-max法
+function minimax(depth,state){
+    var cand = [];
+    for(var i=0; i<STAGE_SIZE; i++)for(var j=0; j<STAGE_SIZE; j++){
+        if(reverce(x,y,depth%2+1,state)){
+            cand[cand.length] = [x,y]
+        }
+    }
+}
+
+// 評価関数
+function eval(state){
+    var score = 0;
+    for(var i=0; i<STAGE_SIZE; i++)for(var j=0; j<STAGE_SIZE; j++){
+        if(state[i][j] == COM_COLOR)    score++;
+        if(state[i][j] == PLAYER_COLOR) score--;
+    }
+    return score;
+}
+
+var game = new Board();
 
 function onClick(e){
     var rect = e.target.getBoundingClientRect();
     var x = e.clientX-rect.left;
     var y = e.clientY-rect.top;
-    if(board.put(~~(x/100),~~(y/100),board.turn)){
-        board.nextturn();
+    if(game.put(~~(x/100),~~(y/100),game.turn)){
+        game.nextturn();
     }
-    if(board.turn == COM_COLOR){
-        board.comLv1();
+    if(game.turn == COM_COLOR){
+        comLv1(game);
     }
 }
 
 function draw(){
-    board.draw()
-    COLOR += 0.01
-    COLOR %= 1
+    game.draw();
+    COLOR += 0.01;
+    COLOR %= 1;
 }
 
 canvas.addEventListener('click',onClick,false);
