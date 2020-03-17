@@ -7,6 +7,9 @@ const PLAYER_COLOR = 1;
 const COM_COLOR = 2;
 var COLOR = 0.0;
 
+window.onload = function(){var opinion =document.getElementById("bottom").value = ""};
+
+
 class Stone{
     constructor(x,y,side){
         this.x = x;
@@ -156,7 +159,8 @@ class Board{
         // 置けないならおしまい
         if(rev.length == 0) return false;
 
-        document.getElementById("bottom").innerHTML += (x+1).toString()+String.fromCharCode("a".charCodeAt(0)+y) + ",";
+        // ログ出すよ
+        document.getElementById("bottom").value += (x+1).toString()+String.fromCharCode("a".charCodeAt(0)+y) + ",";
         // ひっくり返すよー
         for(var p of rev){
             this.stones[p[0]][p[1]].side = side;
