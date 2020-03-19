@@ -71,16 +71,15 @@ class Board{
                 tmp[i][j] = this.stones[i][j].side;
             }
         }
-        console.log("board",tmp)
         return tmp;
     }
 
     // 次の人のターンに変わるよ
     nextturn(){
         this.turn = this.turn%2+1;
-        if(!this.canput(this.turn)){
+        if(!canput(this.turn,this.getboard())){
             this.turn = this.turn%2+1;
-            if(!this.canput(this.turn)){
+            if(!canput(this.turn,this.getboard())){
                 this.gameend();
                 this.turn = 0;
                 return;
@@ -101,17 +100,6 @@ class Board{
         document.getElementById("top").innerHTML =  "GAME OVER" + "<div>" +
                                                     "Player = "+player.toString()+ "<div>" +
                                                     "COM = "+com.toString();
-    }
-
-    // 置ける場所があるか探すよ
-    canput(side){
-        var board = this.getboard();
-        for(var x=0; x<STAGE_SIZE; x++)for(var y=0;y<STAGE_SIZE;y++){
-            if(reverce(x,y,side,board).length > 0){
-                return true;
-            }
-        }
-        return false;
     }
 
     // 石を置くよ
@@ -162,9 +150,18 @@ class Board{
     }
 }
 
+// 置ける場所があるか探すよ
+function canput(side,state){
+    for(var x=0; x<STAGE_SIZE; x++)for(var y=0;y<STAGE_SIZE;y++){
+        if(reverce(x,y,side,state).length > 0){
+            return true;
+        }
+    }
+    return false;
+}
+
 // 裏返せる石を返すよ
 function reverce(x,y,side,state){
-    console.log("rev",x,y,side)
     // 盤の外には置けないし、無を置くことは出来ない。
     if(side <= 0 || side > 2 || 0 > x || x >= STAGE_SIZE || 0 > y || y >= STAGE_SIZE ){
         return [];
@@ -218,14 +215,64 @@ function comLv1(board){
     board.nextturn();
 }
 
-// mini-max法
-function minimax(depth,state){
-    var cand = [];
+function comLv2(board){
+    state = board.getboard();
+    var score=-64,x,y;
     for(var i=0; i<STAGE_SIZE; i++)for(var j=0; j<STAGE_SIZE; j++){
-        if(reverce(x,y,depth%2+1,state)){
-            cand[cand.length] = [x,y]
+        if(reverce(i,j,COM_COLOR,state).length == 0){
+            continue;
+        }
+        var hoge = minimax(i,j,0,state,-100,100,COM_COLOR);
+        if(hoge > score){
+            score = hoge;
+            x = i;
+            y = j;
         }
     }
+    console.log("minimax",x,y,score)
+    board.put(x,y,COM_COLOR);
+    board.nextturn();
+}
+
+function max(a,b){
+    return a > b ? a : b;
+}
+
+function min(a,b){
+    return a < b ? a : b;
+}
+// mini-max法
+function minimax(x,y,depth,state,a,b,side){
+    if(depth == 5) return eval(state);
+    // 盤上の更新
+    var rev = reverce(x,y,side,state);
+    var nstate = JSON.parse(JSON.stringify(state));
+    for(var p of rev){
+        nstate[p[0]][p[1]] = side;
+    }
+    if (rev.length > 0) nstate[x][y] = side;
+    // scoreになんかいれとく
+    var score = side == COM_COLOR ? -100 : 100;
+    // 置けるところを探してdepth+1で再起する
+    for(var i=0; i<STAGE_SIZE; i++)for(var j=0; j<STAGE_SIZE; j++){
+        if(reverce(i,j,side%2+1,nstate).length > 0){
+            var hoge = minimax(x,y,depth+1,nstate,x,y,side%2+1);
+            if(side == COM_COLOR){
+                score = max(score,hoge);
+                a = max(a,hoge);
+                if(score > b){
+                    return score;
+                }
+            }else{
+                score = min(score,hoge);
+                b = min(b,hoge);
+                if (score < a){
+                    return score;
+                }
+            }
+        }
+    }
+    return score;
 }
 
 // 評価関数
@@ -248,7 +295,7 @@ function onClick(e){
         game.nextturn();
     }
     if(game.turn == COM_COLOR){
-        comLv1(game);
+        comLv2(game);
     }
 }
 
